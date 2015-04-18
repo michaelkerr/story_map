@@ -42,7 +42,8 @@ build/
 
 ## Project Specific
 *.sublime-project
-#.sublime-workspace
+*.sublime-workspace
+script.rb
 
 ## Log files
 *.log
