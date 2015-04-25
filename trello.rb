@@ -1,20 +1,38 @@
 #trello.rb
 module Trello
 	def Trello.add_trello(url, query)
-		return HTTParty.post(
+		response = HTTParty.post(
 			url,
 			:headers => {"Content-Type" => "application/json"},
 			:query => query
 		)
+		sleep(1)
+		return response
+	end
+
+	def Trello.delete_trello(url, query)
+		response = HTTParty.delete(
+			url,
+			:headers => {"Content-Type" => "application/json"},
+			:query => query
+		)
+		# binding.pry
+		sleep(1)
 	end
 
 	def Trello.get_cards(url, query, priorities)
-		# card = { :name => "", :labels => Array.new }
 		trello_cards = get_trello(url + "/cards", query)
 		cards = Hash.new
 		trello_cards.each do |entry|
 			if !priorities.include?(entry["name"].split(" - ")[0])
-				cards[entry["name"].split(" - ")[0]] = entry["id"]
+				card = Hash.new
+				card["name"] = entry["name"]
+				card["id"] = entry["id"]
+				begin
+					card["labels"] = entry["labels"][0]["name"]
+				rescue
+				end
+				cards[entry["name"].split(" - ")[0]] = card
 			end
 		end
 		return cards

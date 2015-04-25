@@ -1,14 +1,10 @@
 #jira.rb
 module Jira
-	def Jira.active_issues(url, creds, keys, startAt)
+	def Jira.active_issues(url, creds, startAt)
 		#TODO Add support for multiple projects
 		maxResults = 50
-		query_url = url + "issuekey not in (#{keys}) and project = CORE and type in (story, bug) and status != closed&startAt=#{startAt}&maxResults=#{maxResults}"
+		query_url = url + "project = CORE and type in (story, bug) and status != closed&startAt=#{startAt}&maxResults=#{maxResults}"
 		response = search_jira(query_url, creds)
-		if keys.length == 0
-			query_url = url + "project = CORE and type in (story, bug) and status != closed&startAt=#{startAt}&maxResults=#{maxResults}"
-			response = search_jira(query_url, creds)
-		end
 		return response		
 	end
 

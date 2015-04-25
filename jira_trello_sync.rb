@@ -29,73 +29,80 @@ trello_board = "#{CONFIG["board_id"]}"
 base_query = {:key => "#{CONFIG["app_key"]}", :token => "#{CONFIG["member_token"]}"}
 app_secret = "#{CONFIG["app_secret"]}"
 priority_cards = ["--1--", "--2--", "--3--", "--4--", "--5--", "--INCOMING--"]
-
-
-### Current Trello Cards
-trello_cards = Trello.get_cards("#{trello_url}boards/#{trello_board}", base_query, priority_cards)
-startAt = 0
-count = 0
-all_issues = Array.new
+size_hash = {"S" => "green", "M" => "yellow", "L" => "orange", "XL" => "red" }
 
 ### Current Active Issues
-#@TODO need to get all active issues, not just those that are not in the baord
-puts "Getting Active Jira Issues"
-params = {:includeHistoricSprints => false, :includeFutureSprints => false}
-sprints_active = Jira.active_sprint("#{server}greenhopper/latest/sprintquery/#{jira_board}", creds, params)
-new_issues = Jira.active_issues(search_url, creds, trello_cards.keys.join(","), startAt)
-until startAt > new_issues["total"]
-	new_issues = Jira.active_issues(search_url, creds, trello_cards.keys.join(","), startAt)
-	count = count + new_issues["issues"].count
-	puts "Processing = #{count} of #{new_issues["total"].to_s}"
-	new_issues["issues"].each do |issue|
-		sprints = Jira.sprints_to_list(issue["fields"]["customfield_10007"])
-		if (sprints_active & sprints).empty?
-			#TODO turn into class
-			issue_hash = {:key => "", :summary => "", :story_description => ""}
-			issue_hash["key"] = issue["key"]
-			issue_hash["summary"] = issue["fields"]["summary"]
-			begin
-				issue_hash["component"] = issue["fields"]["components"][0]["name"]
-			rescue
-			end
-			begin
-				issue_hash["size"] = issue["fields"]["customfield_10803"]["value"]
-			rescue
-			end
-			issue_hash["story_description"] = issue["fields"]["customfield_10400"]
-			all_issues << issue_hash
-		end
-	end
-	startAt = new_issues["maxResults"] + new_issues["startAt"]
+# puts "Getting Active Jira Issues"
+# startAt = 0
+# count = 0
+# all_issues = Hash.new
+# params = {:includeHistoricSprints => false, :includeFutureSprints => false}
+# sprints_active = Jira.active_sprint("#{server}greenhopper/latest/sprintquery/#{jira_board}", creds, params)
+# new_issues = Jira.active_issues(search_url, creds, startAt)
+# until startAt > new_issues["total"]
+# 	new_issues = Jira.active_issues(search_url, creds, startAt)
+# 	count = count + new_issues["issues"].count
+# 	puts "Processing = #{count} of #{new_issues["total"].to_s}"
+# 	new_issues["issues"].each do |issue|
+# 		sprints = Jira.sprints_to_list(issue["fields"]["customfield_10007"])
+# 		if (sprints_active & sprints).empty?
+# 			#TODO turn into class
+# 			issue_hash = Hash.new
+# 			issue_hash["key"] = 
+# 			issue_hash["summary"] = issue["fields"]["summary"]
+# 			begin
+# 				issue_hash["component"] = issue["fields"]["components"][0]["name"]
+# 			rescue
+# 			end
+# 			begin
+# 				issue_hash["size"] = issue["fields"]["customfield_10803"]["value"]
+# 			rescue
+# 			end
+# 			issue_hash["story_description"] = issue["fields"]["customfield_10400"]
+# 			all_issues[issue["key"]] = issue_hash
+# 		end
+# 	end
+# 	startAt = new_issues["maxResults"] + new_issues["startAt"]
+# end
+# puts "#{all_issues.keys.count.to_s} new issue(s) imported"
+
+# binding.pry
+
+### Current Trello Cards and Lists
+trello_cards = Trello.get_cards("#{trello_url}boards/#{trello_board}", base_query, priority_cards)
+lists = Trello.get_lists("#{trello_url}boards/#{trello_board}/lists", base_query)
+if !lists.keys.include?("No Component")
+	ap "Adding Trello List: No Component"
+	Trello.add_trello("#{trello_url}boards/#{trello_board}/lists", base_query.merge({ :name => "No Component", :idBoard => trello_board, :pos => "bottom" }))
+	lists = Trello.get_lists("#{trello_url}boards/#{trello_board}/lists", base_query)
 end
-puts "#{all_issues.count.to_s} new issue(s) imported"
 
 ### Add Active Issues as Cards
-#@TODO only add cards that are not in the board
-puts "Adding to Trello"
-lists = Trello.get_lists("#{trello_url}boards/#{trello_board}/lists", base_query)
-added_issues = Array.new
-all_issues.each do |issue|
-	if issue.has_key?("component")
-		### If a list does not exist, create it
-		if !lists.has_key?(issue["component"])
-			query = base_query.merge({ :name => issue["component"], :idBoard => trello_board, :pos => "bottom" })
-			ap "Adding Trello List: " + Trello.add_trello("#{trello_url}boards/#{trello_board}/lists", query)["name"]
-			lists = Trello.get_lists("#{trello_url}boards/#{trello_board}/lists", base_query)
-			### Add the 5 levels of priority as cards to the new list
-			priority_cards.each do |priority|
-				query = base_query.merge({ :idList => lists[issue["component"]], :name => priority })
-				Trello.add_trello("#{trello_url}cards", query)
-				sleep(1)
-			end
-		end
-	else
-		issue["component"] = "Unknown"
-	end
-	Trello.add_trello(trello_url + "cards", base_query.merge({ :idList => lists[issue["component"]], :name => issue["key"] + " - " + issue["summary"], :desc => issue["story_description"], :pos => "bottom"}))
-	added_issues << issue["key"]
-	sleep(1)
-end
+# puts "Adding to Trello"
+# all_issues.each do |key, issue|
+# 	if !trello_cards.keys.include?(key)
+# 		if issue.has_key?("component")
+# 			### If a list does not exist, create it
+# 			if !lists.has_key?(issue["component"])
+# 				ap "Adding Trello List: " + Trello.add_trello("#{trello_url}boards/#{trello_board}/lists", base_query.merge({ :name => issue["component"], :idBoard => trello_board, :pos => "bottom" }))["name"]
+# 				lists = Trello.get_lists("#{trello_url}boards/#{trello_board}/lists", base_query)
+# 				### Add the 5 levels of priority as cards to the new list
+# 				priority_cards.each do |priority|
+# 					query = base_query.merge({ :idList => lists[issue["component"]], :name => priority })
+# 					Trello.add_trello("#{trello_url}cards", query)
+# 				end
+# 			end
+# 		else
+# 			issue["component"] = "No Component"
+# 		end
+# 		Trello.add_trello("#{trello_url}cards", base_query.merge({ :idList => lists[issue["component"]], :name => key + " - " + issue["summary"], :desc => issue["story_description"], :pos => "bottom"}))
+# 	end
+# end
 
 ### Remove Inactive Cards
-#@TODO Remove the cards that are no longer active
+trello_cards.each do |key, value|
+	if !all_issues.keys.include?(key)
+		puts "Deleting #{value["name"]}"
+		Trello.delete_trello("#{trello_url}cards/#{value["id"]}", base_query)
+	end
+end
