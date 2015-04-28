@@ -38,9 +38,19 @@ module Jira
 		sprints = Array.new
 		if issue_sprints != nil
 			issue_sprints.each do |sprint|
-				sprints << sprint.split(",id=")[1].split("]")[0].to_i
+				sprints << sprint.split("id=")[1].split("]")[0].to_i
 			end
 		end
 		return sprints
+	end
+
+	def Jira.update_issue(url, creds, params)
+		response =  HTTParty.put(
+			url, 
+			:headers => {'Content-Type' => 'application/json'},
+			:basic_auth => creds,
+			:data => params
+		)
+		return response
 	end
 end

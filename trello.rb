@@ -16,7 +16,6 @@ module Trello
 			:headers => {"Content-Type" => "application/json"},
 			:query => query
 		)
-		# binding.pry
 		sleep(1)
 	end
 
@@ -30,6 +29,10 @@ module Trello
 				card["id"] = entry["id"]
 				begin
 					card["labels"] = entry["labels"][0]["name"]
+				rescue
+				end
+				begin 
+					card["list_id"] = entry["idList"]
 				rescue
 				end
 				cards[entry["name"].split(" - ")[0]] = card

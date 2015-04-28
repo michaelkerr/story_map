@@ -31,8 +31,7 @@ app_secret = "#{CONFIG["app_secret"]}"
 priority_cards = ["--1--", "--2--", "--3--", "--4--", "--5--", "--INCOMING--"]
 size_hash = {"S" => "green", "M" => "yellow", "L" => "orange", "XL" => "red" }
 
-### Current Active Issues
-puts "Getting Active Jira Issues"
+ap "Getting Active Jira Issues"
 startAt = 0
 count = 0
 all_issues = Hash.new
@@ -48,7 +47,7 @@ until startAt > new_issues["total"]
 		if (sprints_active & sprints).empty?
 			#TODO turn into class
 			issue_hash = Hash.new
-			issue_hash["key"] = 
+			issue_hash["key"] = issue["key"]
 			issue_hash["summary"] = issue["fields"]["summary"]
 			begin
 				issue_hash["component"] = issue["fields"]["components"][0]["name"]
@@ -75,8 +74,7 @@ if !lists.keys.include?("No Component")
 	lists = Trello.get_lists("#{trello_url}boards/#{trello_board}/lists", base_query)
 end
 
-## Add Active Issues as Cards
-puts "Adding to Trello"
+ap "Adding New Cards to Trello"
 all_issues.each do |key, issue|
 	if !trello_cards.keys.include?(key)
 		if issue.has_key?("component")
@@ -96,6 +94,7 @@ all_issues.each do |key, issue|
 		Trello.add_trello("#{trello_url}cards", base_query.merge({ :idList => lists[issue["component"]], :name => key + " - " + issue["summary"], :desc => issue["story_description"], :pos => "bottom"}))
 	end
 end
+puts "Done."
 
 ### Remove Inactive Cards
 trello_cards.each do |key, value|
@@ -104,3 +103,24 @@ trello_cards.each do |key, value|
 		Trello.delete_trello("#{trello_url}cards/#{value["id"]}", base_query)
 	end
 end
+
+## Update Components
+# For each card, determine if its the same in the active issues
+ap "Updating components"
+trello_cards = Trello.get_cards("#{trello_url}boards/#{trello_board}", base_query.merge({ "list" => true }), priority_cards)
+trello_cards.each do |key, value|
+	card_list = lists.invert[value["list_id"]].to_s
+	jira_component = all_issues[key]["component"].to_s
+	if (card_list != jira_component) and (card_list != "No Component" or jira_component.nil?)
+		#@TODO need to remove the old component if it is not empty
+		if jira_component.length == 0
+			data = {"update" => {"components" => [{"add" => {"name" => card_list}}]}}
+		else
+			data = {"update" => {"components" => [{"remove" => {"name" => jira_component}}, {"add" => {"name" => card_list}}]}}
+		end
+		ap "Moving #{key} to #{card_list}"
+		response =  HTTParty.put("#{api_url}issue/#{key}", :headers => {'Content-Type' => 'application/json'}, :basic_auth => creds, :body => data.to_json)
+	end
+end
+puts "Done."
+
