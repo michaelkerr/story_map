@@ -97,7 +97,7 @@ all_issues.each do |key, issue|
 end
 puts "Done."
 
-### Update Jira Issues, remove insactive cards
+### Update Jira Issues, remove inactive cards
 trello_cards = Trello.get_cards("#{trello_url}boards/#{trello_board}", base_query.merge({ "list" => true }), priority_cards)
 trello_cards.each do |key, value|
 	# Remove inactive cards
@@ -118,11 +118,8 @@ trello_cards.each do |key, value|
 		response =  HTTParty.put("#{api_url}issue/#{key}", :headers => {'Content-Type' => 'application/json'}, :basic_auth => creds, :body => data.to_json)
 	end
 	# Update the Jira Size
-	#@TODO check if the sizes are different
 	if (value.keys.include?("size")) and (value["size"] != all_issues[key]["size"])
 		data = {"fields" => {"customfield_10803" => {"value" => value["size"]}}}
 		response =  HTTParty.put("#{api_url}issue/#{key}", :headers => {'Content-Type' => 'application/json'}, :basic_auth => creds, :body => data.to_json)
 	end
 end
-
-#@TODO remove this - extremely temporary

@@ -8,7 +8,7 @@ require 'sinatra'
 ### Bulk Sync Jira/Trello
 get '/sync_jt' do
 	### Run jira_trello_sync
-	ap "Running jira/trello sync....."
+	ap "Running jira to trello sync....."
 	load 'jira_trello_sync.rb'
 	ap "Done"
 	return "200"
