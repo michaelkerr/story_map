@@ -9,7 +9,7 @@ require 'sinatra'
 get '/sync_jt' do
 	### Run jira_trello_sync
 	ap "Running jira/trello sync....."
-	system('jira_trello_sync.rb')
+	load 'jira_trello_sync.rb'
 	ap "Done"
 	return "200"
 end

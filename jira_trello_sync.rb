@@ -63,7 +63,7 @@ until startAt > new_issues["total"]
 	end
 	startAt = new_issues["maxResults"] + new_issues["startAt"]
 end
-puts "#{all_issues.keys.count.to_s} new issue(s) imported"
+puts "#{all_issues.keys.count.to_s} active issue(s) imported"
 
 ### Current Trello Cards and Lists
 trello_cards = Trello.get_cards("#{trello_url}boards/#{trello_board}", base_query, priority_cards)
@@ -73,8 +73,9 @@ if !lists.keys.include?("No Component")
 	Trello.add_trello("#{trello_url}boards/#{trello_board}/lists", base_query.merge({ :name => "No Component", :idBoard => trello_board, :pos => "bottom" }))
 	lists = Trello.get_lists("#{trello_url}boards/#{trello_board}/lists", base_query)
 end
+#@TODO if new list added and there is no component for it, add it
 
-ap "Adding New Cards to Trello"
+ap "Adding new cards to Trello..."
 all_issues.each do |key, issue|
 	if !trello_cards.keys.include?(key)
 		if issue.has_key?("component")
@@ -91,28 +92,23 @@ all_issues.each do |key, issue|
 		else
 			issue["component"] = "No Component"
 		end
-		Trello.add_trello("#{trello_url}cards", base_query.merge({ :idList => lists[issue["component"]], :name => key + " - " + issue["summary"], :desc => issue["story_description"], :pos => "bottom"}))
+		Trello.add_trello("#{trello_url}cards", base_query.merge({ :idList => lists[issue["component"]], :name => key + " - " + issue["summary"], :desc => issue["story_description"], :labels => [size_hash[issue["size"]]], :pos => "bottom"}))
 	end
 end
 puts "Done."
 
-### Remove Inactive Cards
+### Update Jira Issues, remove insactive cards
+trello_cards = Trello.get_cards("#{trello_url}boards/#{trello_board}", base_query.merge({ "list" => true }), priority_cards)
 trello_cards.each do |key, value|
+	# Remove inactive cards
 	if !all_issues.keys.include?(key)
 		puts "Deleting #{value["name"]}"
 		Trello.delete_trello("#{trello_url}cards/#{value["id"]}", base_query)
 	end
-end
-
-## Update Components
-# For each card, determine if its the same in the active issues
-ap "Updating components"
-trello_cards = Trello.get_cards("#{trello_url}boards/#{trello_board}", base_query.merge({ "list" => true }), priority_cards)
-trello_cards.each do |key, value|
+	# Update the Jira Component
 	card_list = lists.invert[value["list_id"]].to_s
 	jira_component = all_issues[key]["component"].to_s
 	if (card_list != jira_component) and (card_list != "No Component" or jira_component.nil?)
-		#@TODO need to remove the old component if it is not empty
 		if jira_component.length == 0
 			data = {"update" => {"components" => [{"add" => {"name" => card_list}}]}}
 		else
@@ -121,6 +117,12 @@ trello_cards.each do |key, value|
 		ap "Moving #{key} to #{card_list}"
 		response =  HTTParty.put("#{api_url}issue/#{key}", :headers => {'Content-Type' => 'application/json'}, :basic_auth => creds, :body => data.to_json)
 	end
+	# Update the Jira Size
+	#@TODO check if the sizes are different
+	if (value.keys.include?("size")) and (value["size"] != all_issues[key]["size"])
+		data = {"fields" => {"customfield_10803" => {"value" => value["size"]}}}
+		response =  HTTParty.put("#{api_url}issue/#{key}", :headers => {'Content-Type' => 'application/json'}, :basic_auth => creds, :body => data.to_json)
+	end
 end
-puts "Done."
 
+#@TODO remove this - extremely temporary

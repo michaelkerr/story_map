@@ -27,14 +27,10 @@ module Trello
 				card = Hash.new
 				card["name"] = entry["name"]
 				card["id"] = entry["id"]
-				begin
-					card["labels"] = entry["labels"][0]["name"]
-				rescue
+				if entry["labels"].length > 0
+					card["size"] = entry["labels"][0]["name"]
 				end
-				begin 
-					card["list_id"] = entry["idList"]
-				rescue
-				end
+				card["list_id"] = entry["idList"]
 				cards[entry["name"].split(" - ")[0]] = card
 			end
 		end
