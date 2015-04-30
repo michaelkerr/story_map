@@ -31,6 +31,7 @@ module Trello
 					card["size"] = entry["labels"][0]["name"]
 				end
 				card["list_id"] = entry["idList"]
+				card["description"] = entry["desc"]
 				cards[entry["name"].split(" - ")[0]] = card
 			end
 		end
@@ -53,5 +54,15 @@ module Trello
 			:query => query
 		)
 		return JSON.parse(response.body)
+	end
+
+	def Trello.put_trello(url, query)
+		response = HTTParty.put(
+			url,
+			:headers => {"Content-Type" => "application/json"},
+			:query => query
+		)
+		sleep(1)
+		return response
 	end
 end

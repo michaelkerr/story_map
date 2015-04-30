@@ -7,7 +7,6 @@ require 'pry'
 require 'yaml'
 require_relative 'jira'
 require_relative 'trello'
-# require './issue.rb'
 
 ### CONFIGURATION
 if File.exist?("config/config.yml")
@@ -32,38 +31,8 @@ priority_cards = ["--1--", "--2--", "--3--", "--4--", "--5--", "--INCOMING--"]
 size_hash = {"S" => "green", "M" => "yellow", "L" => "orange", "XL" => "red" }
 
 ap "Getting Active Jira Issues"
-startAt = 0
-count = 0
-all_issues = Hash.new
-params = {:includeHistoricSprints => false, :includeFutureSprints => false}
-sprints_active = Jira.active_sprint("#{server}greenhopper/latest/sprintquery/#{jira_board}", creds, params)
-new_issues = Jira.active_issues(search_url, creds, startAt)
-until startAt > new_issues["total"]
-	new_issues = Jira.active_issues(search_url, creds, startAt)
-	count = count + new_issues["issues"].count
-	puts "Processing = #{count} of #{new_issues["total"].to_s}"
-	new_issues["issues"].each do |issue|
-		sprints = Jira.sprints_to_list(issue["fields"]["customfield_10007"])
-		if (sprints_active & sprints).empty?
-			#TODO turn into class
-			issue_hash = Hash.new
-			issue_hash["key"] = issue["key"]
-			issue_hash["summary"] = issue["fields"]["summary"]
-			begin
-				issue_hash["component"] = issue["fields"]["components"][0]["name"]
-			rescue
-			end
-			begin
-				issue_hash["size"] = issue["fields"]["customfield_10803"]["value"]
-			rescue
-			end
-			issue_hash["story_description"] = issue["fields"]["customfield_10400"]
-			all_issues[issue["key"]] = issue_hash
-		end
-	end
-	startAt = new_issues["maxResults"] + new_issues["startAt"]
-end
-puts "#{all_issues.keys.count.to_s} active issue(s) imported"
+all_issues = Jira.active_issues(server, jira_board, creds)
+puts "#{all_issues.keys.count.to_s} active issue(s)"
 
 ### Current Trello Cards and Lists
 trello_cards = Trello.get_cards("#{trello_url}boards/#{trello_board}", base_query, priority_cards)
@@ -93,33 +62,42 @@ all_issues.each do |key, issue|
 			issue["component"] = "No Component"
 		end
 		Trello.add_trello("#{trello_url}cards", base_query.merge({ :idList => lists[issue["component"]], :name => key + " - " + issue["summary"], :desc => issue["story_description"], :labels => [size_hash[issue["size"]]], :pos => "bottom"}))
+		#@TODO need to set up webhooks on card creation
+		puts "Added #{key} - #{issue["summary"]}"
 	end
 end
 puts "Done."
 
-### Update Jira Issues, remove inactive cards
+### Update Jira Issues, components, sizes, remove inactive cards
 trello_cards = Trello.get_cards("#{trello_url}boards/#{trello_board}", base_query.merge({ "list" => true }), priority_cards)
 trello_cards.each do |key, value|
-	# Remove inactive cards
-	if !all_issues.keys.include?(key)
-		puts "Deleting #{value["name"]}"
-		Trello.delete_trello("#{trello_url}cards/#{value["id"]}", base_query)
-	end
-	# Update the Jira Component
-	card_list = lists.invert[value["list_id"]].to_s
-	jira_component = all_issues[key]["component"].to_s
-	if (card_list != jira_component) and (card_list != "No Component" or jira_component.nil?)
-		if jira_component.length == 0
-			data = {"update" => {"components" => [{"add" => {"name" => card_list}}]}}
+	if !priority_cards.include?(key)
+		# Remove inactive cards
+		if !all_issues.keys.include?(key)
+			puts "Deleting #{value["name"]}"
+			Trello.delete_trello("#{trello_url}cards/#{value["id"]}", base_query)
 		else
-			data = {"update" => {"components" => [{"remove" => {"name" => jira_component}}, {"add" => {"name" => card_list}}]}}
+			# Update the Jira Component
+			card_list = lists.invert[value["list_id"]].to_s
+			begin
+				jira_component = all_issues[key]["component"].to_s
+			rescue
+				binding.pry
+			end
+			if (card_list != jira_component) and (card_list != "No Component" or jira_component.nil?)
+				if jira_component.length == 0
+					data = {"update" => {"components" => [{"add" => {"name" => card_list}}]}}
+				else	
+					data = {"update" => {"components" => [{"remove" => {"name" => jira_component}}, {"add" => {"name" => card_list}}]}}
+				end
+				ap "Moving #{key} to #{card_list}"
+				response =  HTTParty.put("#{api_url}issue/#{key}", :headers => {'Content-Type' => 'application/json'}, :basic_auth => creds, :body => data.to_json)
+			end
+			# Update the Jira Size
+			if (value.keys.include?("size")) and (value["size"] != all_issues[key]["size"])
+				data = {"fields" => {"customfield_10803" => {"value" => value["size"]}}}
+				response =  HTTParty.put("#{api_url}issue/#{key}", :headers => {'Content-Type' => 'application/json'}, :basic_auth => creds, :body => data.to_json)
+			end
 		end
-		ap "Moving #{key} to #{card_list}"
-		response =  HTTParty.put("#{api_url}issue/#{key}", :headers => {'Content-Type' => 'application/json'}, :basic_auth => creds, :body => data.to_json)
-	end
-	# Update the Jira Size
-	if (value.keys.include?("size")) and (value["size"] != all_issues[key]["size"])
-		data = {"fields" => {"customfield_10803" => {"value" => value["size"]}}}
-		response =  HTTParty.put("#{api_url}issue/#{key}", :headers => {'Content-Type' => 'application/json'}, :basic_auth => creds, :body => data.to_json)
 	end
 end
