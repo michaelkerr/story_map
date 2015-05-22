@@ -44,7 +44,7 @@ puts "#{all_issues.keys.count.to_s} active issue(s)"
 ### Current Trello Cards and Lists
 trello_cards = Trello.get_cards("#{trello_url}boards/#{trello_board}", base_query, priority_cards)
 lists = Trello.get_lists("#{trello_url}boards/#{trello_board}/lists", base_query)
-if !lists.keys.include?("No Component")
+unless lists.keys.include?("No Component")
 	ap "Adding Trello List: No Component"
 	Trello.add_trello("#{trello_url}boards/#{trello_board}/lists", base_query.merge({ :name => "No Component", :idBoard => trello_board, :pos => "bottom" }))
 	lists = Trello.get_lists("#{trello_url}boards/#{trello_board}/lists", base_query)
