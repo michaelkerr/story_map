@@ -1,11 +1,13 @@
 class Issue
-	def initialize(key, summary, component, size, story_description, labels, themes)
-		@key				= key
-		@summary			= summary
-		@component			= component
-		@size				= size
-		@story_description	= story_description
-		@labels				= labels
-		@themes				= themes
+	attr_accessor :key, :summary, :component, :size, :description, :labels, :themes
+	
+	def initialize params
+		@key				= params[:key]
+		@summary			= params[:summary]
+		@component			= params[:component]
+		@size				= params[:size]
+		@description		= params[:description]
+		@labels				= params[:labels]
+		@themes				= params[:themes]
 	end
 end
