@@ -3,6 +3,9 @@ require 'awesome_print'
 require 'httparty'
 require 'pry'
 require 'sinatra'
+#@TODO turn issue into a class
+#@TODO webhooks for issue/card changes
+#@TODO add gem file
 
 ### CONFIGURATION
 if File.exist?("config/config.yml")
@@ -23,7 +26,13 @@ trello_url = "#{CONFIG["trello_base"]}"
 trello_board = "#{CONFIG["board_id"]}"
 base_query = {:key => "#{CONFIG["app_key"]}", :token => "#{CONFIG["member_token"]}"}
 app_secret = "#{CONFIG["app_secret"]}"
-priority_cards = ["--1--", "--2--", "--3--", "--4--", "--5--", "--INCOMING--"]
+priority_cards = [
+	"-------------1-------------", 
+	"-------------2-------------", 
+	"-------------3-------------", 
+	"-------------4-------------", 
+	"-------------5-------------", 
+	"-------------NEW-------------"]
 size_hash = {"S" => "green", "M" => "yellow", "L" => "orange", "XL" => "red" }
 
 ### Bulk Sync Jira/Trello
@@ -35,66 +44,28 @@ get '/sync_jt' do
 	return "200"
 end
 
-### Change in list == component update
-post '/component_update' do
-	#Get the list of the card in Trello
-	#Update the component in Jira
+### Trello Card Create 
+post '/card_create' do
 end
 
-post '/list_update' do
-	#Get the component of the card from Jira
-	#Update the list in Trello
+### Trello Story/Bug Card Update
+post '/card_update' do
+	# Trello => Jira
+	# Update Component from list
+	# Update Size from label
+	# Update Story Description from Description
+	# Update Summary from Name
+	# Position
 end
 
-### Change in board position
-post '/position_update' do
-	# if the position in Trello changes
-	# Update the issues position in the Jira backlog
+### Jira issue Update
+post '/issue_update' do
+	# Jira => Trello
+	# Update list from component
+	# Update label from Size
+	# Update Description from Story Description
+	# Update Name from Summary and Key
 end
 
-post '/position_update' do
-	# if the position in the backlog changes
-	# update the position in the trello board
-end
-
-### Get status of update
-get '/status' do
-	# if the active status in Jira changes (completed, or moved into the active sprint)
-	# remove it from the trello board
-end
-
-### Update the Card Description
-get '/card_description' do
-	# if the story description in Jira changes
-	# update the description in the Trello Board
-	ap "Running jira->trello story update....."
-	ap "Done"
-	return "200"
-end
-
-### Update the Story Description
-get '/story_desc' do
-	# if the story description in Trello changes
-	# update the description in Jira issue
-	ap "Running trello->jira story update....."
-	ap "Done"
-	return "200"
-end
-
-### Update the Card Size
-get '/card_size' do
-	# if the story size in Jira changes
-	# update the Trello card
-	ap "Running jira->trello size update....."
-	ap "Done"
-	return "200"
-end
-
-### Update the issue Size
-get '/issue_size' do
-	# if the story size changes in Trello card
-	# Update the Jira issues
-	ap "Running trello->jira size update....."
-	ap "Done"
-	return "200"
-end
+### Trello 
+### Jira Theme Update

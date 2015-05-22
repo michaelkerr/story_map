@@ -19,6 +19,20 @@ module Trello
 		sleep(1)
 	end
 
+	def Trello.get_boards(url, query)
+		# To Call trello_boards = Trello.get_boards("#{trello_url}members/michaelkerr1/boards", base_query)
+		response = HTTParty.get(
+			url, 
+			:headers => {"Content-Type" => "application/json"}, 
+			:query => query
+				)
+		boards = Hash.new
+		JSON.parse(response.body).each do |board|
+			boards[board["id"]] = board["name"]
+		end
+		return boards
+	end
+
 	def Trello.get_cards(url, query, priorities)
 		trello_cards = get_trello(url + "/cards", query)
 		cards = Hash.new

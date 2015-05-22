@@ -1,0 +1,12 @@
+server: https://idmeinc.atlassian.net/rest/
+username: username
+password: ""
+project_id: CORE
+jira_board: "23"
+filename: data.json
+app_key: f690b6058a9aae1ce3145a3e63fb7b53
+app_secret: c1a37860bed79107c3bc5cd4f2e376de2cb241246f73321577b2ba61c46f07b3
+member_token: 36b375093f75742ed6cebf1d410c0002d707bedf0c844702040312efdc8f5e6c
+trello_base: https://api.trello.com/1/
+board_id: 552f95014072c069c4b865ea
+priorities: ["--^---^---^--1--^---^---^--", "--^---^---^--2--^---^---^--", "--^---^---^--3--^---^---^--", "--^---^---^--4--^---^---^--", "--^---^---^--5--^---^---^--", "--v---v---v--NEW--v---v---v--"]

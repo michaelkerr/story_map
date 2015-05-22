@@ -35,7 +35,7 @@ build/
 .rvmrc
 
 ## Configuration Files
-*.yml
+*.local.yml
 
 ## Data Files
 *.json

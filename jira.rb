@@ -1,5 +1,16 @@
 #jira.rb
 module Jira
+	def Jira.active_epics(server, creds)
+		api_url = server + "api/latest/"
+		search_url = api_url + "search?jql="
+		maxResults = 50
+		startAt = 0
+		count = 0
+
+		all_epics = hash.new 
+		
+	end
+
 	def Jira.active_issues(server, jira_board, creds)
 		api_url = server + "api/latest/"
 		search_url = api_url + "search?jql="
@@ -39,6 +50,9 @@ module Jira
 					else
 						issue_hash["story_description"] = "As a <user type>, I want to <function or goal>, so that <benefit or reason>\r\n\r\nAcceptance Criteria (Define \"Done\"):"
 						#@TODO Update the Jira ticket with this description as well.
+					end
+					if issue["fields"]["labels"].length > 0
+						issue_hash["labels"] = issue["fields"]["labels"]
 					end
 					all_issues[issue["key"]] = issue_hash
 				end

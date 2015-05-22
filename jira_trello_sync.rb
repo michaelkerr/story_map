@@ -27,7 +27,14 @@ trello_url = "#{CONFIG["trello_base"]}"
 trello_board = "#{CONFIG["board_id"]}"
 base_query = {:key => "#{CONFIG["app_key"]}", :token => "#{CONFIG["member_token"]}"}
 app_secret = "#{CONFIG["app_secret"]}"
-priority_cards = ["--1--", "--2--", "--3--", "--4--", "--5--", "--INCOMING--"]
+priority_cards = [
+	"--^---^---^--1--^---^---^--", 
+	"--^---^---^--2--^---^---^--", 
+	"--^---^---^--3--^---^---^--", 
+	"--^---^---^--4--^---^---^--", 
+	"--^---^---^--5--^---^---^--", 
+	"--v---v---v--NEW--v---v---v--"
+]
 size_hash = {"S" => "green", "M" => "yellow", "L" => "orange", "XL" => "red" }
 
 ap "Getting Active Jira Issues"
