@@ -8,8 +8,8 @@ require 'sinatra'
 #@TODO add gem file
 
 ### CONFIGURATION
-if File.exist?("config/config.yml")
-	CONFIG = YAML.load_file("config/config.yml") unless defined? CONFIG
+if File.exist?("config/config.local.yml")
+	CONFIG = YAML.load_file("config/config.local.yml") unless defined? CONFIG
 else
 	abort("config.yml not found in /config")
 end

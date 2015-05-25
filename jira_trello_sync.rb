@@ -9,8 +9,8 @@ require_relative 'jira'
 require_relative 'trello'
 
 ### CONFIGURATION
-if File.exist?("config/config.yml")
-	CONFIG = YAML.load_file("config/config.yml") unless defined? CONFIG
+if File.exist?("config/config.local.yml")
+	CONFIG = YAML.load_file("config/config.local.yml") unless defined? CONFIG
 else
 	abort("config.yml not found in /config")
 end
@@ -53,10 +53,10 @@ end
 
 ap "Adding new cards to Trello..."
 all_issues.each do |key, issue|
-	if !trello_cards.keys.include?(key)
+	unless trello_cards.keys.include?(key)
 		if issue.has_key?("component")
 			### If a list does not exist, create it
-			if !lists.has_key?(issue["component"])
+			unless lists.has_key?(issue["component"])
 				ap "Adding Trello List: " + Trello.add_trello("#{trello_url}boards/#{trello_board}/lists", base_query.merge({ :name => issue["component"], :idBoard => trello_board, :pos => "bottom" }))["name"]
 				lists = Trello.get_lists("#{trello_url}boards/#{trello_board}/lists", base_query)
 				### Add the 5 levels of priority as cards to the new list
@@ -78,9 +78,9 @@ puts "Done."
 ### Update Jira Issues, components, sizes, remove inactive cards
 trello_cards = Trello.get_cards("#{trello_url}boards/#{trello_board}", base_query.merge({ "list" => true }), priority_cards)
 trello_cards.each do |key, value|
-	if !priority_cards.include?(key)
+	unless priority_cards.include?(key)
 		# Remove inactive cards
-		if !all_issues.keys.include?(key)
+		unless all_issues.keys.include?(key)
 			puts "Deleting #{value["name"]}"
 			Trello.delete_trello("#{trello_url}cards/#{value["id"]}", base_query)
 		else
@@ -105,6 +105,8 @@ trello_cards.each do |key, value|
 				data = {"fields" => {"customfield_10803" => {"value" => value["size"]}}}
 				response =  HTTParty.put("#{api_url}issue/#{key}", :headers => {'Content-Type' => 'application/json'}, :basic_auth => creds, :body => data.to_json)
 			end
+			# Update the priority
+			#@TODO
 		end
 	end
 end

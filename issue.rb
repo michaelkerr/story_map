@@ -2,12 +2,12 @@ class Issue
 	attr_accessor :key, :summary, :component, :size, :description, :labels, :themes
 	
 	def initialize params
-		@key				= params[:key]
-		@summary			= params[:summary]
-		@component			= params[:component]
-		@size				= params[:size]
-		@description		= params[:description]
-		@labels				= params[:labels]
-		@themes				= params[:themes]
+		self.key			= params[:key]
+		self.summary		= params[:summary]
+		self.component		= params[:component]
+		self.size			= params[:size]
+		self.description	= params[:description]
+		self.labels			= params[:labels]
+		self.themes			= params[:themes]
 	end
 end
