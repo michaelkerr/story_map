@@ -18,7 +18,9 @@ module Jira
 		startAt = 0
 		count = 0
 
-		all_issues = Hash.new
+		# all_issues = Hash.new
+		all_issues = Array.new
+
 		params = {:includeHistoricSprints => false, :includeFutureSprints => false}
 		sprints_active = Jira.active_sprint("#{server}greenhopper/latest/sprintquery/#{jira_board}", creds, params)
 		query_url = search_url + "project = CORE and type in (story, bug) and status != closed&startAt=#{startAt}&maxResults=#{maxResults}"
@@ -27,7 +29,6 @@ module Jira
 			query_url = search_url + "project = CORE and type in (story, bug) and status != closed&startAt=#{startAt}&maxResults=#{maxResults}"
 			new_issues = search_jira(query_url, creds)
 
-			# new_issues = Jira.active_issues(search_url, creds, startAt)
 			count = count + new_issues["issues"].count
 			puts "Processing = #{count} of #{new_issues["total"].to_s}"
 			new_issues["issues"].each do |issue|
@@ -35,26 +36,60 @@ module Jira
 				if (sprints_active & sprints).empty?
 					#TODO turn into class
 					issue_hash = Hash.new
-					issue_hash["key"] = issue["key"]
-					issue_hash["summary"] = issue["fields"]["summary"]
 					begin
-						issue_hash["component"] = issue["fields"]["components"][0]["name"]
+						component = issue["fields"]["components"][0]["name"]
 					rescue
+						component = nil
 					end
 					begin
-						issue_hash["size"] = issue["fields"]["customfield_10803"]["value"]
+						size = issue["fields"]["customfield_10803"]["value"]
 					rescue
+						size = nil
 					end
-					if !issue["fields"]["customfield_10400"].nil? 
-						issue_hash["story_description"] = issue["fields"]["customfield_10400"]
+					unless issue["fields"]["customfield_10400"].nil? 
+						description = issue["fields"]["customfield_10400"]
 					else
-						issue_hash["story_description"] = "As a <user type>, I want to <function or goal>, so that <benefit or reason>\r\n\r\nAcceptance Criteria (Define \"Done\"):"
+						description = "As a <user type>, I want to <function or goal>, so that <benefit or reason>\r\n\r\nAcceptance Criteria (Define \"Done\"):"
 						#@TODO Update the Jira ticket with this description as well.
 					end
 					if issue["fields"]["labels"].length > 0
-						issue_hash["labels"] = issue["fields"]["labels"]
+						labels = issue["fields"]["labels"]
+					else
+						labels = Array.new
 					end
-					all_issues[issue["key"]] = issue_hash
+					themes = Array.new
+
+					all_issues << Issue.new(
+						issue["key"],
+						issue["fields"]["summary"],
+						component,
+						size,
+						description,
+						labels,
+						themes
+						)
+
+					# issue_hash["key"] = issue["key"]
+					# issue_hash["summary"] = issue["fields"]["summary"]
+					# begin
+					# 	issue_hash["component"] = issue["fields"]["components"][0]["name"]
+					# rescue
+					# end
+					# begin
+					# 	issue_hash["size"] = issue["fields"]["customfield_10803"]["value"]
+					# rescue
+					# end
+					# if !issue["fields"]["customfield_10400"].nil? 
+					# 	issue_hash["story_description"] = issue["fields"]["customfield_10400"]
+					# else
+					# 	issue_hash["story_description"] = "As a <user type>, I want to <function or goal>, so that <benefit or reason>\r\n\r\nAcceptance Criteria (Define \"Done\"):"
+					# 	#@TODO Update the Jira ticket with this description as well.
+					# end
+					# if issue["fields"]["labels"].length > 0
+					# 	issue_hash["labels"] = issue["fields"]["labels"]
+					# end
+					
+					# all_issues[issue["key"]] = issue_hash
 				end
 			end
 			startAt = new_issues["maxResults"] + new_issues["startAt"]
