@@ -59,6 +59,8 @@ module Jira
 					end
 					themes = Array.new
 
+					#@TODO Fetch or Try
+					
 					all_issues << Issue.new(
 						issue["key"],
 						issue["fields"]["summary"],
